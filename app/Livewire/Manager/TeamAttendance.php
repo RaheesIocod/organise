@@ -25,7 +25,6 @@ class TeamAttendance extends Component
     {
         $this->user = Auth::user();
         $this->selectedDate = Carbon::today()->format('Y-m-d');
-
         // Get team members
         if ($this->user->hasRole('admin') || $this->user->hasRole('hr')) {
             $this->teamMembers = User::whereNotIn('id', [$this->user->id])
@@ -46,8 +45,8 @@ class TeamAttendance extends Component
 
         // Apply search filter
         if ($this->search) {
-            $query->where('name', 'like', '%'.$this->search.'%')
-                ->orWhere('email', 'like', '%'.$this->search.'%');
+            $query->where('name', 'like', '%' . $this->search . '%')
+                ->orWhere('email', 'like', '%' . $this->search . '%');
         }
 
         // Filter by reporting relationship
@@ -62,7 +61,6 @@ class TeamAttendance extends Component
         }])
             ->orderBy('name')
             ->paginate(10);
-
         return view('livewire.manager.team-attendance', [
             'attendanceData' => $attendanceData,
         ]);
