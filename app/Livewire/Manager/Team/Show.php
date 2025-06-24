@@ -12,11 +12,17 @@ use Livewire\Component;
 class Show extends Component
 {
     public User $user;
+
     public $selectedTab = 'overview';
+
     public $attendanceMonth;
+
     public $attendanceYear;
+
     public $attendanceData = [];
+
     public $taskMonth;
+
     public $taskYear;
 
     public function mount(User $user)

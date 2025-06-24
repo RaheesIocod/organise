@@ -11,6 +11,7 @@ class Index extends Component
     use WithPagination;
 
     public $search = '';
+
     public $filter = 'all';
 
     protected $queryString = [
@@ -23,8 +24,8 @@ class Index extends Component
         $query = Project::query();
 
         if ($this->search) {
-            $query->where('name', 'like', '%' . $this->search . '%')
-                ->orWhere('description', 'like', '%' . $this->search . '%');
+            $query->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('description', 'like', '%'.$this->search.'%');
         }
 
         if ($this->filter !== 'all') {
@@ -35,7 +36,7 @@ class Index extends Component
             ->paginate(10);
 
         return view('livewire.projects.index', [
-            'projects' => $projects
+            'projects' => $projects,
         ]);
     }
 

@@ -9,7 +9,9 @@ use Livewire\Component;
 class Show extends Component
 {
     public $user;
+
     public $employee;
+
     public $selectedTab = 'profile';
 
     public function mount(User $user)

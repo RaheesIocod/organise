@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // First check if renaming is required
-        if (Schema::hasColumn('leave_applications', 'reviewed_by') && !Schema::hasColumn('leave_applications', 'approved_by')) {
+        if (Schema::hasColumn('leave_applications', 'reviewed_by') && ! Schema::hasColumn('leave_applications', 'approved_by')) {
             // Drop the foreign key constraint first
             Schema::table('leave_applications', function (Blueprint $table) {
                 $foreignKeys = $this->listTableForeignKeys('leave_applications');
@@ -32,7 +32,7 @@ return new class extends Migration
             });
         }
         // If neither column exists, add the approved_by column
-        else if (!Schema::hasColumn('leave_applications', 'reviewed_by') && !Schema::hasColumn('leave_applications', 'approved_by')) {
+        elseif (! Schema::hasColumn('leave_applications', 'reviewed_by') && ! Schema::hasColumn('leave_applications', 'approved_by')) {
             Schema::table('leave_applications', function (Blueprint $table) {
                 $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
                 $table->timestamp('approved_at')->nullable();
@@ -47,7 +47,7 @@ return new class extends Migration
     {
         // This is a data correction migration, so down would typically not be needed
         // But for completeness, reverse the process
-        if (Schema::hasColumn('leave_applications', 'approved_by') && !Schema::hasColumn('leave_applications', 'reviewed_by')) {
+        if (Schema::hasColumn('leave_applications', 'approved_by') && ! Schema::hasColumn('leave_applications', 'reviewed_by')) {
             // Drop the foreign key constraint first
             Schema::table('leave_applications', function (Blueprint $table) {
                 $foreignKeys = $this->listTableForeignKeys('leave_applications');

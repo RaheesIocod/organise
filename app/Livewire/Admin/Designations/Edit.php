@@ -3,14 +3,16 @@
 namespace App\Livewire\Admin\Designations;
 
 use App\Models\Designation;
-use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class Edit extends Component
 {
     #[Title('Edit Designation')]
     public Designation $designation;
+
     public $name;
+
     public $description;
 
     public function mount(Designation $designation)
@@ -23,7 +25,7 @@ class Edit extends Component
     protected function rules()
     {
         return [
-            'name' => 'required|string|max:100|unique:designations,name,' . $this->designation->id,
+            'name' => 'required|string|max:100|unique:designations,name,'.$this->designation->id,
             'description' => 'nullable|string|max:255',
         ];
     }

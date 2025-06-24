@@ -3,18 +3,24 @@
 namespace App\Livewire\Admin\LeaveTypes;
 
 use App\Models\LeaveType;
-use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class Edit extends Component
 {
     #[Title('Edit Leave Type')]
     public LeaveType $leaveType;
+
     public $name;
+
     public $description;
+
     public $days_allowed;
+
     public $requires_approval;
+
     public $is_paid;
+
     public $color;
 
     public function mount(LeaveType $leaveType)
@@ -31,7 +37,7 @@ class Edit extends Component
     protected function rules()
     {
         return [
-            'name' => 'required|string|max:100|unique:leave_types,name,' . $this->leaveType->id,
+            'name' => 'required|string|max:100|unique:leave_types,name,'.$this->leaveType->id,
             'description' => 'nullable|string|max:255',
             'days_allowed' => 'required|integer|min:0',
             'requires_approval' => 'boolean',

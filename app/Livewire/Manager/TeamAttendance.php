@@ -14,8 +14,11 @@ class TeamAttendance extends Component
     use WithPagination;
 
     public $user;
+
     public $teamMembers = [];
+
     public $selectedDate;
+
     public $search = '';
 
     public function mount()
@@ -43,8 +46,8 @@ class TeamAttendance extends Component
 
         // Apply search filter
         if ($this->search) {
-            $query->where('name', 'like', '%' . $this->search . '%')
-                ->orWhere('email', 'like', '%' . $this->search . '%');
+            $query->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('email', 'like', '%'.$this->search.'%');
         }
 
         // Filter by reporting relationship

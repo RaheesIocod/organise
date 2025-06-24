@@ -11,6 +11,7 @@ use Livewire\Component;
 class Show extends Component
 {
     public LeaveApplication $leaveApplication;
+
     public string $comments = '';
 
     protected $rules = [
@@ -25,7 +26,7 @@ class Show extends Component
         $currentUser = Auth::user();
 
         if (
-            !($currentUser->hasRole('admin') || $currentUser->hasRole('hr')) &&
+            ! ($currentUser->hasRole('admin') || $currentUser->hasRole('hr')) &&
             $leaveApplication->user->reported_to !== $currentUser->id
         ) {
             abort(403, 'You are not authorized to approve this leave application.');
@@ -45,7 +46,8 @@ class Show extends Component
 
         // Check if the application is already approved or rejected
         if ($this->leaveApplication->status !== 'pending') {
-            session()->flash('error', 'This leave application has already been ' . $this->leaveApplication->status . '.');
+            session()->flash('error', 'This leave application has already been '.$this->leaveApplication->status.'.');
+
             return;
         }
 
@@ -56,8 +58,9 @@ class Show extends Component
                 ->where('year', now()->year)
                 ->first();
 
-            if (!$userBalance || ($userBalance->total_allocated - $userBalance->used) < $this->leaveApplication->days_count) {
+            if (! $userBalance || ($userBalance->total_allocated - $userBalance->used) < $this->leaveApplication->days_count) {
                 session()->flash('error', 'The employee does not have enough leave balance.');
+
                 return;
             }
 
@@ -85,7 +88,8 @@ class Show extends Component
 
         // Check if the application is already approved or rejected
         if ($this->leaveApplication->status !== 'pending') {
-            session()->flash('error', 'This leave application has already been ' . $this->leaveApplication->status . '.');
+            session()->flash('error', 'This leave application has already been '.$this->leaveApplication->status.'.');
+
             return;
         }
 

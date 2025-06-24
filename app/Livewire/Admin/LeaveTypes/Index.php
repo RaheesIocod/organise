@@ -3,18 +3,19 @@
 namespace App\Livewire\Admin\LeaveTypes;
 
 use App\Models\LeaveType;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Title;
 
 class Index extends Component
 {
     use WithPagination;
 
     #[Title('Leave Types')]
-
     public $search = '';
+
     public $showDeleteModal = false;
+
     public $leaveTypeIdToDelete;
 
     public function updatingSearch()
@@ -47,8 +48,8 @@ class Index extends Component
     public function render()
     {
         return view('livewire.admin.leave-types.index', [
-            'leaveTypes' => LeaveType::where('name', 'like', '%' . $this->search . '%')
-                ->orWhere('description', 'like', '%' . $this->search . '%')
+            'leaveTypes' => LeaveType::where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('description', 'like', '%'.$this->search.'%')
                 ->orderBy('name')
                 ->paginate(10),
         ]);

@@ -3,13 +3,14 @@
 namespace App\Livewire\Admin\Designations;
 
 use App\Models\Designation;
-use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class Create extends Component
 {
     #[Title('Create Designation')]
     public $name;
+
     public $description;
 
     protected $rules = [

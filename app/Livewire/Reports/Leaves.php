@@ -11,9 +11,13 @@ use Livewire\Component;
 class Leaves extends Component
 {
     public $year;
+
     public $user;
+
     public $leaveTypes = [];
+
     public $leaveBalances = [];
+
     public $leaveHistory = [];
 
     public function mount()

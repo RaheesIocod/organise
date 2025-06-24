@@ -6,7 +6,6 @@ use App\Models\Attendance;
 use App\Models\LeaveApplication;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class AttendanceSeeder extends Seeder
@@ -31,7 +30,7 @@ class AttendanceSeeder extends Seeder
 
             foreach ($period as $date) {
                 $dateString = $date->format('Y-m-d');
-                if (!isset($userLeaves[$leave->user_id])) {
+                if (! isset($userLeaves[$leave->user_id])) {
                     $userLeaves[$leave->user_id] = [];
                 }
                 $userLeaves[$leave->user_id][$dateString] = true;

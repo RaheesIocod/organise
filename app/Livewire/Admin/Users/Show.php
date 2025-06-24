@@ -9,6 +9,7 @@ use Livewire\Component;
 class Show extends Component
 {
     public $user;
+
     public $userToShow;
 
     public function mount(User $user)

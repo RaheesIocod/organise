@@ -1,270 +1,11 @@
-<div x-data="{
-    currentDate: new Date(),
-    selectedFromDate: '{{ $fromDate }}',
-    selectedToDate: '{{ $toDate }}',
-    selectionMode: 'start', // 'start' or 'end'
-    daysInMonth: [],
-    currentMonth: new Date().getMonth(),
-    currentYear: new Date().getFullYear(),
-    leaveTypeDetails: null,
-
-    // Computed property to get all dates in the selected range
-    get dateRange() {
-        if (!this.selectedFromDate || !this.selectedToDate) return [];
-
-        const start = new Date(this.selectedFromDate);
-        const end = new Date(this.selectedToDate);
-        const dates = [];
-
-        // Generate all dates between start and end
-        const current = new Date(start);
-        while (current <= end) {
-            dates.push(current.toISOString().split('T')[0]);
-            current.setDate(current.getDate() + 1);
-        }
-
-        return dates;
-    },
-
-    initCalendar() {
-        this.generateDaysInMonth(this.currentMonth, this.currentYear);
-        this.$watch('selectedFromDate', value => {
-            @this.set('fromDate', value);
-        });
-        this.$watch('selectedToDate', value => {
-            @this.set('toDate', value);
-        });
-    },
-
-    generateDaysInMonth(month, year) {
-        this.daysInMonth = [];
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        // Add empty slots for days from previous month
-        for (let i = 0; i < firstDay; i++) {
-            this.daysInMonth.push({ day: '', isCurrentMonth: false });
-        }
-
-        // Add days of current month
-        for (let i = 1; i <= daysInMonth; i++) {
-            const date = new Date(year, month, i);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const isToday = date.toDateString() === today.toDateString();
-            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-
-            this.daysInMonth.push({
-                day: i,
-                isCurrentMonth: true,
-                date: dateString,
-                isToday: isToday,
-                isPast: date < today
-            });
-        }
-    },
-
-    prevMonth() {
-        if (this.currentMonth === 0) {
-            this.currentMonth = 11;
-            this.currentYear--;
-        } else {
-            this.currentMonth--;
-        }
-        this.generateDaysInMonth(this.currentMonth, this.currentYear);
-    },
-
-    nextMonth() {
-        if (this.currentMonth === 11) {
-            this.currentMonth = 0;
-            this.currentYear++;
-        } else {
-            this.currentMonth++;
-        }
-        this.generateDaysInMonth(this.currentMonth, this.currentYear);
-    },
-
-    formatDate(date) {
-        if (!date) return '';
-        const d = new Date(date);
-        return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-    },
-
-    selectDate(date) {
-        try {
-            if (!date) return; // Guard clause for undefined date
-
-            // Always use string comparison to avoid date object issues
-            const compareDates = (date1, date2) => {
-                const d1 = typeof date1 === 'string' ? date1 : '';
-                const d2 = typeof date2 === 'string' ? date2 : '';
-                return d1.localeCompare(d2);
-            };
-
-            if (this.selectionMode === 'start') {
-                // Set start date
-                this.selectedFromDate = date;
-
-                // If end date is before or equal to start date, reset it to start date
-                if (compareDates(this.selectedToDate, date) < 0 || !this.selectedToDate) {
-                    this.selectedToDate = date;
-                }
-
-                // Always switch to end date selection to ensure both dates are selected
-                this.selectionMode = 'end';
-            } else {
-                // Don't allow end date before start date
-                if (compareDates(date, this.selectedFromDate) >= 0) {
-                    this.selectedToDate = date;
-                    // Keep in end selection mode to make it clearer both dates are required
-                    // User can manually switch to start if needed using the toggle
-                } else {
-                    // If trying to select an end date before start date,
-                    // set it as the new start date and keep in end selection mode
-                    this.selectedFromDate = date;
-                    this.selectedToDate = date;
-                }
-            }
-
-            // Ensure the from-to dates are always valid
-            if (compareDates(this.selectedToDate, this.selectedFromDate) < 0) {
-                const temp = this.selectedFromDate;
-                this.selectedFromDate = this.selectedToDate;
-                this.selectedToDate = temp;
-            }
-
-            // Always update the Livewire component values to ensure they're in sync
-            @this.set('fromDate', this.selectedFromDate);
-            @this.set('toDate', this.selectedToDate);
-
-            // Regenerate calendar days to update visual state
-            this.generateDaysInMonth(this.currentMonth, this.currentYear);
-        } catch (error) {
-            console.error('Error in date selection:', error);
-        }
-    },
-
-    // Check if date is in the selected range
-    isInRange(date) {
-        try {
-            if (!date || !this.selectedFromDate || !this.selectedToDate) return false;
-
-            // Don't proceed if it's the exact start or end date
-            if (date === this.selectedFromDate || date === this.selectedToDate) return false;
-
-            // Parse dates safely, always using the date string part only
-            let d, start, end;
-            try {
-                d = date.includes('T') ? date.split('T')[0] : date;
-                start = this.selectedFromDate.includes('T') ? this.selectedFromDate.split('T')[0] : this.selectedFromDate;
-                end = this.selectedToDate.includes('T') ? this.selectedToDate.split('T')[0] : this.selectedToDate;
-            } catch (e) {
-                return false; // If any parsing fails, we can't compare
-            }
-
-            // Direct string comparison for YYYY-MM-DD formatted dates
-            return d > start && d < end;
-
-        } catch (error) {
-            console.error('Error checking date range:', error);
-            return false;
-        }
-    },
-
-    // Set selection mode
-    setSelectionMode(mode) {
-        this.selectionMode = mode;
-    },
-
-    showLeaveTypeDetails(typeId) {
-        if (!typeId) {
-            this.leaveTypeDetails = null;
-            return;
-        }
-
-        const leaveType = {{ Illuminate\Support\Js::from($leaveTypes) }}.find(type => type.id == typeId);
-        if (leaveType) {
-            this.leaveTypeDetails = leaveType;
-        }
-    },
-
-    // Helper function to get calendar day classes
-    getCalendarDayClass(day) {
-        try {
-            if (!day) return '';
-            if (!day.isCurrentMonth) return '';
-
-            const classes = [];
-
-            // Selected start date
-            if (day.date === this.selectedFromDate) {
-                classes.push('bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-md ring-2 ring-indigo-100');
-            }
-
-            // Selected end date
-            else if (day.date === this.selectedToDate) {
-                classes.push('bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-md');
-            }
-
-            // Date in range
-            else if (this.isInRange(day.date)) {
-                classes.push('bg-indigo-50 text-indigo-900 border border-indigo-100 hover:border-indigo-300');
-            }
-
-            // Today's date
-            else if (day.isToday) {
-                classes.push('bg-emerald-500 text-white font-bold');
-            }
-
-            // Past dates
-            else if (day.isPast) {
-                classes.push('text-gray-400 hover:text-gray-900');
-            }
-
-            // Hover effects for all interactive days
-            if (!day.isPast || this.selectionMode === 'end') {
-                classes.push('hover:bg-indigo-50 hover:shadow-sm');
-            }
-
-            // Border radius classes for range selection
-            if (day.date === this.selectedFromDate && this.selectedFromDate !== this.selectedToDate) {
-                classes.push('rounded-l-lg');
-            }
-
-            if (day.date === this.selectedToDate && this.selectedFromDate !== this.selectedToDate) {
-                classes.push('rounded-r-lg');
-            }
-
-            // Single date selection or dates outside range
-            if ((day.date === this.selectedFromDate && day.date === this.selectedToDate) ||
-                (!this.isInRange(day.date) && day.date !== this.selectedFromDate && day.date !== this.selectedToDate)) {
-                classes.push('rounded-lg');
-            }
-
-            // Hover animation for interactive dates
-            if (!day.isPast || this.selectionMode === 'end') {
-                classes.push('transform hover:scale-110 hover:z-10');
-            }
-
-            // Disabled state
-            if (day.isPast && this.selectionMode === 'start') {
-                classes.push('cursor-not-allowed opacity-60');
-            }
-
-            return classes.join(' ');
-        } catch (error) {
-            console.error('Error getting calendar day class:', error);
-            return '';
-        }
-    }
-}" x-init="initCalendar"> <!-- Main Container -->
-    <div class="container mx-auto max-w-7xl px-2 sm:px-4 py-3 sm:py-6">
+<div>
+    <div class="container mx-auto max-w-7xl px-3 sm:px-5 py-4 sm:py-6">
 
         <!-- Main Layout: Two-Column Grid -->
-        <div class="grid grid-cols-12 gap-3 sm:gap-6">
+        <div class="grid grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
             <div class="col-span-12 lg:col-span-9 order-2 lg:order-1">
                 <!-- Apply for Leave Card -->
-                <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300">
+                <div class="bg-white rounded-xl shadow-lg p-5 sm:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300">
                     <div class="mb-3 sm:mb-5">
                         <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-1.5 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-indigo-500 mr-1.5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -294,12 +35,12 @@
 
                             <!-- Left Column - Leave Type & Calendar -->
                             <div class="flex flex-col space-y-4">
-                                <!-- 1. Leave Type (Moved to calendar side) -->
-                                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 shadow-md hover:shadow-lg transition-all duration-300 p-3 sm:p-4">
-                                    <div class="mb-2 sm:mb-3">
-                                        <div class="flex items-center mb-2">
-                                            <div class="bg-gradient-to-br from-indigo-200 to-purple-300 p-1.5 sm:p-2 rounded-md mr-2 sm:mr-2.5 border border-indigo-300/50 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <!-- 1. Leave Type Section -->
+                                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 shadow-md hover:shadow-lg transition-all duration-300 p-4 sm:p-5">
+                                    <div class="mb-3">
+                                        <div class="flex items-center mb-3">
+                                            <div class="bg-gradient-to-br from-indigo-200 to-purple-300 p-2 rounded-md mr-3 border border-indigo-300/50 shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-4.5 sm:w-4.5 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                                 </svg>
@@ -310,49 +51,62 @@
                                             </label>
                                         </div>
                                         <div class="flex flex-col space-y-4">
-                                            <div x-data="{ open: false, selected: '' }" class="relative mt-1">
+                                            <div class="relative" wire:key="leave-type-dropdown">
                                                 <!-- Custom styled dropdown trigger -->
-                                                <button @click="open = !open" type="button"
-                                                    class="flex items-center justify-between w-full bg-gradient-to-r from-white to-indigo-50 border-2 border-indigo-200 px-5 py-3.5 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]">
-                                                    <span
-                                                        x-text="$wire.leaveTypeId ? {{ Illuminate\Support\Js::from($leaveTypes) }}.find(type => type.id == $wire.leaveTypeId)?.name : 'Select Your Leave Type'"
-                                                        :class="$wire.leaveTypeId ? 'text-indigo-900 font-bold text-lg' : 'text-gray-500'"></span>
+                                                <button wire:click="$toggle('showLeaveTypeDropdown')" type="button"
+                                                    class="flex items-center justify-between w-full bg-gradient-to-r from-white to-indigo-50 border-2 border-indigo-200 px-4 py-3 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]">
+                                                    <span class="{{ $leaveTypeId ? 'text-indigo-900 font-bold text-lg' : 'text-gray-500' }}">
+                                                        @if ($leaveTypeId)
+                                                            {{ $leaveTypes->firstWhere('id', $leaveTypeId)->name }}
+                                                        @else
+                                                            Select Your Leave Type
+                                                        @endif
+                                                    </span>
                                                     <div class="flex items-center">
                                                         <!-- Show colored indicator based on selected leave type -->
-                                                        <div x-show="$wire.leaveTypeId" class="mr-2.5">
-                                                            <div x-data="{
-                                                                get leaveColor() {
-                                                                    const type = {{ Illuminate\Support\Js::from($leaveTypes) }}.find(t => t.id == $wire.leaveTypeId)?.name.toLowerCase() || '';
-                                                                    if (type.includes('sick')) return 'bg-red-500';
-                                                                    if (type.includes('casual')) return 'bg-blue-500';
-                                                                    if (type.includes('vacation') || type.includes('annual')) return 'bg-emerald-500';
-                                                                    if (type.includes('unpaid') || type.includes('lop')) return 'bg-yellow-500';
-                                                                    if (type.includes('comp')) return 'bg-purple-500';
-                                                                    return 'bg-indigo-500';
-                                                                }
-                                                            }" class="w-4 h-4 rounded-full shadow-inner border-2 border-white" :class="leaveColor"></div>
-                                                        </div>
+                                                        @if ($leaveTypeId)
+                                                            <div class="mr-2.5">
+                                                                @php
+                                                                    $selectedType = $leaveTypes->firstWhere('id', $leaveTypeId);
+                                                                    $colorClass = 'bg-indigo-500';
+                                                                    if ($selectedType) {
+                                                                        $name = strtolower($selectedType->name);
+                                                                        if (strpos($name, 'sick') !== false) {
+                                                                            $colorClass = 'bg-red-500';
+                                                                        } elseif (strpos($name, 'casual') !== false) {
+                                                                            $colorClass = 'bg-blue-500';
+                                                                        } elseif (strpos($name, 'vacation') !== false || strpos($name, 'annual') !== false) {
+                                                                            $colorClass = 'bg-emerald-500';
+                                                                        } elseif (strpos($name, 'unpaid') !== false || strpos($name, 'lop') !== false) {
+                                                                            $colorClass = 'bg-yellow-500';
+                                                                        } elseif (strpos($name, 'comp') !== false) {
+                                                                            $colorClass = 'bg-purple-500';
+                                                                        }
+                                                                    }
+                                                                @endphp
+                                                                <div class="w-4 h-4 rounded-full shadow-inner border-2 border-white {{ $colorClass }}"></div>
+                                                            </div>
+                                                        @endif
                                                         <!-- Dropdown arrow with animation -->
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600 transition-transform duration-200" :class="{ 'rotate-180': open }"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                            class="h-5 w-5 text-indigo-600 transition-transform duration-200 {{ $showLeaveTypeDropdown ? 'rotate-180' : '' }}" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                                         </svg>
                                                     </div>
                                                 </button>
 
                                                 <!-- Enhanced dropdown menu with visual indicators -->
-                                                <div x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-200"
-                                                    x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0"
-                                                    x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform translate-y-0"
-                                                    x-transition:leave-end="opacity-0 transform -translate-y-2"
-                                                    class="absolute mt-2 z-50 w-full bg-white rounded-xl shadow-xl border-2 border-indigo-100 py-2 max-h-72 overflow-auto backdrop-blur-sm">
+                                                <div wire:key="dropdown-menu" @click.outside="$wire.set('showLeaveTypeDropdown', false)"
+                                                    class="absolute mt-2 z-50 w-full bg-white rounded-xl shadow-xl border-2 border-indigo-100 py-2 max-h-72 overflow-auto backdrop-blur-sm
+                                                    {{ $showLeaveTypeDropdown ? '' : 'hidden' }} transition-all duration-200">
 
                                                     <div class="p-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50">
                                                         <div class="text-sm text-indigo-700 font-bold">Select Leave Type</div>
                                                     </div>
 
                                                     <!-- Empty option -->
-                                                    <button @click="open = false; $wire.leaveTypeId = ''; $dispatch('input', ''); showLeaveTypeDetails('')"
+                                                    <button wire:click="resetLeaveType"
                                                         class="flex items-center px-5 py-3 w-full text-left hover:bg-indigo-50 cursor-pointer transition-all duration-200">
                                                         <div class="w-4 h-4 rounded-full border-2 border-gray-300 mr-3 shadow-sm"></div>
                                                         <span class="text-gray-500 font-medium">Select Your Leave Type</span>
@@ -360,10 +114,8 @@
 
                                                     <!-- Leave type options -->
                                                     @foreach ($leaveTypes as $leaveType)
-                                                        <button wire:key="leave-type-{{ $leaveType->id }}"
-                                                            @click="open = false; $wire.leaveTypeId = '{{ $leaveType->id }}'; $dispatch('input', '{{ $leaveType->id }}'); showLeaveTypeDetails('{{ $leaveType->id }}')"
-                                                            class="flex items-center px-5 py-3 w-full text-left hover:bg-indigo-50 cursor-pointer transition-all duration-200 transform hover:scale-[1.01]"
-                                                            :class="{ 'bg-gradient-to-r from-indigo-50 to-purple-50 shadow-sm': $wire.leaveTypeId == '{{ $leaveType->id }}' }">
+                                                        <button wire:key="leave-type-{{ $leaveType->id }}" wire:click="selectLeaveType({{ $leaveType->id }})"
+                                                            class="flex items-center px-5 py-3 w-full text-left hover:bg-indigo-50 cursor-pointer transition-all duration-200 transform hover:scale-[1.01] {{ $leaveTypeId == $leaveType->id ? 'bg-gradient-to-r from-indigo-50 to-purple-50 shadow-sm' : '' }}">
                                                             <div class="flex-shrink-0">
                                                                 @php
                                                                     $colorClass = 'bg-indigo-500';
@@ -403,8 +155,7 @@
                                                                     @if ($leaveType->advance_notice_days > 0)
                                                                         <span class="inline-flex items-center bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1">
                                                                             <svg class="w-2 h-2 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z">
                                                                                 </path>
                                                                             </svg>
                                                                             {{ $leaveType->advance_notice_days }}d notice
@@ -444,48 +195,49 @@
                                         </div>
 
                                         <!-- Leave type details with enhanced animation -->
-                                        <div x-show="leaveTypeDetails" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform -translate-y-2"
-                                            x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-200"
-                                            x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform -translate-y-2"
-                                            class="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-b-xl">
+                                        <div class="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-b-xl {{ $leaveTypeDetails ? '' : 'hidden' }}">
 
                                             <div class="flex items-center text-indigo-700 font-medium mb-2">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
-                                                <span x-text="leaveTypeDetails ? leaveTypeDetails.name + ' Information' : ''"></span>
+                                                <span>{{ $leaveTypeDetails ? $leaveTypeDetails->name . ' Information' : '' }}</span>
                                             </div>
 
                                             <!-- Enhanced styled info pills -->
                                             <div class="mt-2 flex flex-wrap gap-2">
-                                                <div x-show="leaveTypeDetails && leaveTypeDetails.is_limited"
-                                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 shadow-sm">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    Limited (Subject to balance)
-                                                </div>
-                                                <div x-show="leaveTypeDetails && !leaveTypeDetails.is_limited"
-                                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    Unlimited
-                                                </div>
-                                                <div x-show="leaveTypeDetails && leaveTypeDetails.advance_notice_days > 0"
-                                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shadow-sm">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <span x-text="leaveTypeDetails.advance_notice_days + ' days notice required'"></span>
-                                                </div>
-                                                <div x-show="leaveTypeDetails && leaveTypeDetails.advance_notice_days === 0"
-                                                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    No advance notice needed
-                                                </div>
+                                                @if ($leaveTypeDetails && $leaveTypeDetails->is_limited)
+                                                    <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 shadow-sm">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Limited (Subject to balance)
+                                                    </div>
+                                                @endif
+                                                @if ($leaveTypeDetails && !$leaveTypeDetails->is_limited)
+                                                    <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Unlimited
+                                                    </div>
+                                                @endif
+                                                @if ($leaveTypeDetails && $leaveTypeDetails->advance_notice_days > 0)
+                                                    <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shadow-sm">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        {{ $leaveTypeDetails->advance_notice_days }} days notice required
+                                                    </div>
+                                                @endif
+                                                @if ($leaveTypeDetails && $leaveTypeDetails->advance_notice_days === 0)
+                                                    <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        No advance notice needed
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -515,19 +267,15 @@
 
                                             <!-- Selection mode toggle -->
                                             <div class="inline-flex rounded-md shadow-md" role="group">
-                                                <button @click="setSelectionMode('start')" type="button"
-                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-l-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all duration-200"
-                                                    :class="selectionMode === 'start' ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border border-indigo-500' :
-                                                        'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+                                                <button wire:click="setSelectionMode('start')" type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-l-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all duration-200 {{ $selectionMode === 'start' ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border border-indigo-500' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                                                     </svg>
                                                     From
                                                 </button>
-                                                <button @click="setSelectionMode('end')" type="button"
-                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-r-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all duration-200"
-                                                    :class="selectionMode === 'end' ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border border-indigo-500' :
-                                                        'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+                                                <button wire:click="setSelectionMode('end')" type="button"
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-r-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all duration-200 {{ $selectionMode === 'end' ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border border-indigo-500' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                                     </svg>
@@ -538,7 +286,7 @@
 
                                         <div class="flex justify-between items-center mb-1 bg-gray-50 rounded-md px-1 py-0.5 border border-gray-100">
                                             <!-- Previous Month Button -->
-                                            <button @click="prevMonth" class="p-0.5 hover:bg-indigo-50 rounded text-gray-500 hover:text-indigo-700">
+                                            <button wire:click="prevMonth" class="p-0.5 hover:bg-indigo-50 rounded text-gray-500 hover:text-indigo-700">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                                                 </svg>
@@ -546,13 +294,13 @@
 
                                             <!-- Month/Year Display -->
                                             <div class="px-2 rounded-sm bg-gradient-to-r from-indigo-50 to-purple-50">
-                                                <h4 class="text-xs font-bold text-indigo-700"
-                                                    x-text="new Date(currentYear, currentMonth).toLocaleDateString('en-US', {month: 'short', year: 'numeric'})">
+                                                <h4 class="text-xs font-bold text-indigo-700">
+                                                    {{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth + 1)->format('M Y') }}
                                                 </h4>
                                             </div>
 
                                             <!-- Next Month Button -->
-                                            <button @click="nextMonth" class="p-0.5 hover:bg-indigo-50 rounded text-gray-500 hover:text-indigo-700">
+                                            <button wire:click="nextMonth" class="p-0.5 hover:bg-indigo-50 rounded text-gray-500 hover:text-indigo-700">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
@@ -572,20 +320,23 @@
 
                                         <!-- Ultra-Compact Calendar Grid -->
                                         <div class="grid grid-cols-7 gap-[1px] text-center">
-                                            <template x-for="day in daysInMonth" :key="day.date || Math.random()">
+                                            @foreach ($daysInMonth as $day)
                                                 <div class="flex items-center justify-center p-0 relative">
-                                                    <button x-show="day.isCurrentMonth" x-bind:class="getCalendarDayClass(day)" x-bind:disabled="day.isPast && selectionMode === 'start'"
-                                                        @click="day.isCurrentMonth && day.date ? selectDate(day.date) : null" type="button"
-                                                        class="w-6 h-6 flex items-center justify-center text-[10px] font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-200 mx-auto">
-                                                        <span x-text="day.day"></span>
-                                                    </button>
+                                                    @if ($day['isCurrentMonth'])
+                                                        <button
+                                                            class="w-6 h-6 flex items-center justify-center text-[10px] font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-indigo-200 mx-auto {{ $this->getCalendarDayClass($day) }}"
+                                                            wire:click="selectDate('{{ $day['date'] }}')" {{ $day['isPast'] && $selectionMode === 'start' ? 'disabled' : '' }} type="button">
+                                                            {{ $day['day'] }}
+                                                        </button>
 
-                                                    <!-- Special indicator for partial day -->
-                                                    <div x-show="$wire.isHalfDay && day.date && day.date === selectedFromDate && day.date === selectedToDate"
-                                                        class="absolute bottom-0 h-0.5 left-0.5 right-0.5 bg-purple-400 rounded-full">
-                                                    </div>
+                                                        <!-- Special indicator for partial day -->
+                                                        @if ($isHalfDay && $day['date'] && $day['date'] === $fromDate && $day['date'] === $toDate)
+                                                            <div class="absolute bottom-0 h-0.5 left-0.5 right-0.5 bg-purple-400 rounded-full">
+                                                            </div>
+                                                        @endif
+                                                    @endif
                                                 </div>
-                                            </template>
+                                            @endforeach
                                         </div>
 
                                         <!-- Ultra-Compact Legend -->
@@ -611,43 +362,14 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
-                                                <span class="font-medium" x-data="{
-                                                    get daysCount() {
-                                                        if (!this.selectedFromDate || !this.selectedToDate) return '0';
-                                                
-                                                        const fromDate = new Date(this.selectedFromDate);
-                                                        const toDate = new Date(this.selectedToDate);
-                                                        let days = (toDate - fromDate) / (1000 * 60 * 60 * 24) + 1;
-                                                
-                                                        // Same day calculations
-                                                        if (fromDate.getTime() === toDate.getTime()) {
-                                                            if ($wire.startTimePart === 'morning' && $wire.endTimePart === 'end_of_day') {
-                                                                return '1'; // Full day
-                                                            } else if (($wire.startTimePart === 'morning' && $wire.endTimePart === 'morning') ||
-                                                                ($wire.startTimePart === 'afternoon' && $wire.endTimePart === 'end_of_day')) {
-                                                                return '0.5'; // Half day
-                                                            } else {
-                                                                return '1'; // Default
-                                                            }
-                                                        }
-                                                
-                                                        // Multiple day calculations
-                                                        if ($wire.startTimePart === 'afternoon') {
-                                                            days -= 0.5; // Starting in afternoon
-                                                        }
-                                                
-                                                        if ($wire.endTimePart === 'morning') {
-                                                            days -= 0.5; // Ending in morning
-                                                        }
-                                                
-                                                        return days.toFixed(1).replace('.0', '');
-                                                    }
-                                                }" x-text="daysCount + ' ' + (daysCount === '1' ? 'day' : 'days')"></span>
+                                                <span class="font-medium">
+                                                    {{ $this->daysCount }} {{ $this->daysCount == 1 ? 'day' : 'days' }}
+                                                </span>
                                             </p>
                                         </div>
 
-                                        <input type="hidden" name="fromDate" wire:model="fromDate" x-model="selectedFromDate" id="fromDate">
-                                        <input type="hidden" name="toDate" wire:model="toDate" x-model="selectedToDate" id="toDate">
+                                        <input type="hidden" name="fromDate" wire:model="fromDate" id="fromDate">
+                                        <input type="hidden" name="toDate" wire:model="toDate" id="toDate">
 
                                         @error('fromDate')
                                             <p class="mt-2 text-xs text-red-600 text-center">{{ $message }}</p>
@@ -660,11 +382,11 @@
                             </div>
                             <!-- 2. Start Time + End Time -->
                             <div
-                                class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300 p-3 sm:p-5 transform hover:scale-[1.01]">
-                                <div class="mb-3 sm:mb-4 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2">
+                                class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300 p-4 sm:p-5 transform hover:scale-[1.01]">
+                                <div class="mb-4 flex flex-wrap sm:flex-nowrap justify-between items-center gap-3">
                                     <div class="flex items-center">
-                                        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-1.5 sm:p-2 rounded-md mr-2 sm:mr-2.5 shadow-md">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-md mr-3 shadow-md">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
@@ -672,38 +394,44 @@
                                     </div>
 
                                     <!-- Date range display -->
-                                    <div class="w-full sm:w-auto flex items-center justify-center text-xs bg-gray-700 px-2 sm:px-3 py-1 rounded-lg shadow-inner border border-gray-600">
-                                        <span class="font-medium text-indigo-300 truncate max-w-[80px] sm:max-w-none" x-text="selectedFromDate ? formatDate(selectedFromDate) : 'Start Date'"></span>
-                                        <span class="text-purple-400 px-1">→</span>
-                                        <span class="font-medium text-indigo-300 truncate max-w-[80px] sm:max-w-none" x-text="selectedToDate ? formatDate(selectedToDate) : 'End Date'"></span>
+                                    <div class="w-full sm:w-auto flex items-center justify-center text-xs bg-gray-700/70 px-3 py-1.5 rounded-lg shadow-inner border border-gray-600/80">
+                                        <span class="font-medium text-indigo-300 truncate max-w-[80px] sm:max-w-none">
+                                            {{ $fromDate ? $this->formatDate($fromDate) : 'Start Date' }}
+                                        </span>
+                                        <span class="text-purple-400 px-2 font-bold">→</span>
+                                        <span class="font-medium text-indigo-300 truncate max-w-[80px] sm:max-w-none">
+                                            {{ $toDate ? $this->formatDate($toDate) : 'End Date' }}
+                                        </span>
                                     </div>
                                 </div>
 
                                 <!-- Ultra-Compact Day Parts Selection UI -->
                                 <div class="grid grid-cols-1 md:grid-cols-1 gap-2 sm:gap-3">
                                     <!-- Start Date Time Part Selection -->
-                                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg text-white p-3 sm:p-2 shadow-sm border border-gray-700">
-                                        <div class="mb-1 flex justify-between items-center">
-                                            <span class="text-xs text-gray-300 font-medium flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg text-white p-4 shadow-sm border border-gray-700">
+                                        <div class="mb-2 flex justify-between items-center">
+                                            <span class="text-xs text-gray-200 font-medium flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                                 Start Time
                                             </span>
-                                            <span class="text-[10px] text-indigo-300 bg-gray-800 px-1.5 py-0.5 rounded" x-text="selectedFromDate ? formatDate(selectedFromDate) : ''"></span>
+                                            <span class="text-xs text-indigo-300 bg-gray-800 px-2 py-0.5 rounded-md border border-gray-700/80">
+                                                {{ $fromDate ? $this->formatDate($fromDate) : '' }}
+                                            </span>
                                         </div>
 
-                                        <div class="grid grid-cols-2 gap-1 mb-1">
+                                        <div class="grid grid-cols-2 gap-2 mb-2">
                                             <!-- Morning Option -->
                                             <label class="cursor-pointer flex items-center justify-center">
                                                 <input type="radio" name="startTimePart" wire:model="startTimePart" value="morning" class="sr-only peer">
                                                 <div
-                                                    class="w-full py-0.5 px-2 rounded flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    class="w-full py-1.5 px-3 rounded-md flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                                     </svg>
-                                                    <span class="text-[10px]">Morning</span>
+                                                    <span class="text-xs">Morning</span>
                                                 </div>
                                             </label>
 
@@ -711,18 +439,18 @@
                                             <label class="cursor-pointer flex items-center justify-center">
                                                 <input type="radio" name="startTimePart" wire:model="startTimePart" value="afternoon" class="sr-only peer">
                                                 <div
-                                                    class="w-full py-0.5 px-2 rounded flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    class="w-full py-1.5 px-3 rounded-md flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                                     </svg>
-                                                    <span class="text-[10px]">Afternoon</span>
+                                                    <span class="text-xs">Afternoon</span>
                                                 </div>
                                             </label>
                                         </div>
 
-                                        <div class="text-[9px] text-indigo-200 flex items-center bg-gray-800/50 p-0.5 rounded">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div class="text-xs text-indigo-200 flex items-center bg-gray-800/60 p-1.5 rounded-md mt-1 border border-gray-700/50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 flex-shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             <span>Select <span class="font-medium text-indigo-300">Afternoon</span> to start leave after lunch</span>
@@ -734,28 +462,29 @@
                                     </div>
 
                                     <!-- End Date Time Part Selection -->
-                                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg text-white p-3 sm:p-2 shadow-sm border border-gray-700">
-                                        <div class="mb-1 flex justify-between items-center">
-                                            <span class="text-xs text-gray-300 font-medium flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg text-white p-4 shadow-sm border border-gray-700">
+                                        <div class="mb-2 flex justify-between items-center">
+                                            <span class="text-xs text-gray-200 font-medium flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                                 </svg>
                                                 End Time
                                             </span>
-                                            <span class="text-[10px] text-indigo-300 bg-gray-800 px-1.5 py-0.5 rounded" x-text="selectedToDate ? formatDate(selectedToDate) : ''"></span>
+                                            <span
+                                                class="text-xs text-indigo-300 bg-gray-800 px-2 py-0.5 rounded-md border border-gray-700/80">{{ $toDate ? $this->formatDateForDisplay($toDate) : '' }}</span>
                                         </div>
 
-                                        <div class="grid grid-cols-2 gap-1 mb-1">
+                                        <div class="grid grid-cols-2 gap-2 mb-2">
                                             <!-- Morning Option -->
                                             <label class="cursor-pointer flex items-center justify-center">
                                                 <input type="radio" name="endTimePart" wire:model="endTimePart" value="morning" class="sr-only peer">
                                                 <div
-                                                    class="w-full py-0.5 px-2 rounded flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    class="w-full py-1.5 px-3 rounded-md flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                                     </svg>
-                                                    <span class="text-[10px]">Morning</span>
+                                                    <span class="text-xs">Morning</span>
                                                 </div>
                                             </label>
 
@@ -763,18 +492,18 @@
                                             <label class="cursor-pointer flex items-center justify-center">
                                                 <input type="radio" name="endTimePart" wire:model="endTimePart" value="end_of_day" class="sr-only peer">
                                                 <div
-                                                    class="w-full py-0.5 px-2 rounded flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    class="w-full py-1.5 px-3 rounded-md flex items-center justify-center text-center border border-gray-700 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 hover:bg-gray-800 transition duration-200">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                                     </svg>
-                                                    <span class="text-[10px]">End of day</span>
+                                                    <span class="text-xs">End of day</span>
                                                 </div>
                                             </label>
                                         </div>
 
-                                        <div class="text-[9px] text-indigo-200 flex items-center bg-gray-800/50 p-0.5 rounded">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div class="text-xs text-indigo-200 flex items-center bg-gray-800/60 p-1.5 rounded-md mt-1 border border-gray-700/50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 flex-shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             <span>Select <span class="font-medium text-indigo-300">Morning</span> to end leave before lunch</span>
@@ -787,61 +516,24 @@
                                 </div>
 
                                 <!-- Leave Days Counter with dynamic calculation -->
-                                <div class="mt-4 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-lg p-2 text-center border border-indigo-800 shadow-inner">
+                                <div class="mt-5 bg-gradient-to-r from-indigo-900 to-purple-900 rounded-lg p-3 border border-indigo-800 shadow-inner">
                                     <div class="flex items-center justify-center">
-                                        <div class="bg-white/10 rounded-l-md px-2 py-1 border-r border-indigo-700/50">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div class="bg-white/10 rounded-l-lg px-3 py-2 border-r border-indigo-700/50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                         </div>
-                                        <div class="px-3 py-1">
+                                        <div class="px-4 py-1.5">
                                             <p class="text-purple-200 text-sm">
-                                                Leave duration: <span class="font-bold text-white" x-data="{
-                                                    get daysCount() {
-                                                        if (!this.selectedFromDate || !this.selectedToDate) return '0';
-                                                
-                                                        const fromDate = new Date(this.selectedFromDate);
-                                                        const toDate = new Date(this.selectedToDate);
-                                                        let days = (toDate - fromDate) / (1000 * 60 * 60 * 24) + 1;
-                                                
-                                                        // Same day calculations
-                                                        if (fromDate.getTime() === toDate.getTime()) {
-                                                            if ($wire.startTimePart === 'morning' && $wire.endTimePart === 'end_of_day') {
-                                                                return '1'; // Full day
-                                                            } else if (($wire.startTimePart === 'morning' && $wire.endTimePart === 'morning') ||
-                                                                ($wire.startTimePart === 'afternoon' && $wire.endTimePart === 'end_of_day')) {
-                                                                return '0.5'; // Half day
-                                                            } else {
-                                                                return '1'; // Default
-                                                            }
-                                                        }
-                                                
-                                                        // Multiple day calculations
-                                                        if ($wire.startTimePart === 'afternoon') {
-                                                            days -= 0.5; // Starting in afternoon
-                                                        }
-                                                
-                                                        if ($wire.endTimePart === 'morning') {
-                                                            days -= 0.5; // Ending in morning
-                                                        }
-                                                
-                                                        return days.toFixed(1).replace('.0', '');
-                                                    }
-                                                }" x-text="daysCount"></span>
-                                                <span x-data="{
-                                                    get daysText() {
-                                                        const days = parseFloat(document.querySelector('[x-text=\'daysCount\']').textContent);
-                                                        return days === 1 ? 'day' : 'days';
-                                                    }
-                                                }" x-text="daysText"></span>
-                                                <span x-show="$wire.leaveTypeId" class="text-xs"> from
-                                                    <span class="text-white font-medium whitespace-nowrap" x-data="{
-                                                        get leaveTypeName() {
-                                                            const type = {{ Illuminate\Support\Js::from($leaveTypes) }}.find(t => t.id == $wire.leaveTypeId);
-                                                            return type ? type.name : 'Selected Leave Type';
-                                                        }
-                                                    }" x-text="leaveTypeName"></span>
-                                                </span>
+                                                Leave duration: <span class="font-bold text-white text-lg">{{ $this->daysCount }}</span>
+                                                <span>{{ $this->daysCount == 1 ? 'day' : 'days' }}</span>
+                                                @if ($leaveTypeId)
+                                                    <span class="ml-1 text-xs"> from
+                                                        <span class="text-white font-medium whitespace-nowrap bg-white/10 px-2 py-0.5 rounded-full ml-0.5">
+                                                            {{ $leaveTypes->firstWhere('id', $leaveTypeId)->name }}
+                                                        </span>
+                                                    </span>
+                                                @endif
                                             </p>
                                         </div>
                                     </div>
@@ -850,31 +542,28 @@
 
                             <!-- 3. Reason for Leave Section -->
                             <div
-                                class="bg-gradient-to-br from-white to-indigo-50 rounded-xl border border-indigo-200 shadow-md hover:shadow-lg transition-all duration-300 p-3 sm:p-4 transform hover:scale-[1.01]">
-                                <div class="mb-2 sm:mb-1.5 flex items-center flex-wrap sm:flex-nowrap">
-                                    <div class="bg-gradient-to-br from-indigo-100 to-purple-100 p-1.5 rounded-md mr-2 border border-indigo-100/50">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
+                                class="bg-gradient-to-br from-white to-indigo-50 rounded-xl border border-indigo-200 shadow-md hover:shadow-lg transition-all duration-300 p-4 sm:p-5 transform hover:scale-[1.01]">
+                                <div class="mb-3 flex items-center justify-between flex-wrap sm:flex-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="bg-gradient-to-br from-indigo-200 to-purple-300 p-2 rounded-md mr-3 border border-indigo-300/50 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <label for="reason" class="text-sm sm:text-base font-medium text-gray-800 flex items-center flex-wrap">
+                                            Reason for Leave <span class="text-red-500 ml-0.5">*</span>
+                                        </label>
                                     </div>
-                                    <label for="reason" class="text-sm font-medium text-gray-800 flex items-center flex-wrap">
-                                        Reason for Leave <span class="text-red-500 ml-0.5">*</span>
-                                        <span class="ml-1 sm:ml-2 text-[10px] sm:text-xs text-gray-400">(Required for approval)</span>
-                                    </label>
+                                    <span class="mt-1 sm:mt-0 text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full shadow-sm border border-gray-100">(Required for approval)</span>
                                 </div>
                                 <div class="relative">
                                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-l"></div>
-                                    <textarea id="reason" wire:model="reason" rows="3"
-                                        class="block w-full bg-gray-50/70 border-gray-200 rounded-r-lg pl-3 pr-12 py-2 shadow-sm focus:ring-indigo-400 focus:border-indigo-400 text-sm"
+                                    <textarea id="reason" wire:model="reason" rows="3" class="block w-full bg-white border-gray-300 rounded-lg pl-3 pr-14 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                                         placeholder="Please provide a specific reason for your leave request..."></textarea>
 
-                                    <div class="absolute right-2 bottom-2 text-[10px] bg-white/70 px-1.5 py-0.5 rounded-sm border border-gray-100 text-gray-500" x-data="{
-                                        get charCount() {
-                                            return $wire.reason ? $wire.reason.length : 0;
-                                        }
-                                    }">
-                                        <span x-text="charCount"></span>/500
+                                    <div class="absolute right-2 bottom-2 text-xs bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 shadow-sm">
+                                        {{ strlen($reason ?? '') }}/500
                                     </div>
 
                                     @error('reason')
@@ -890,22 +579,19 @@
                             </div>
 
                             <!-- Enhanced Submit Button Section -->
-                            <div class="mt-5 sm:mt-6 flex justify-center">
-                                <div x-data="{ showHint: false }" class="relative w-full sm:w-3/4 lg:w-full mx-auto">
-                                    <button type="submit"
-                                        class="group w-full px-4 sm:px-6 py-4 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium text-base sm:text-md rounded-xl sm:rounded-lg shadow-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105"
-                                        x-bind:disabled="!selectedFromDate || !selectedToDate || !$wire.startTimePart || !$wire.endTimePart || !$wire.leaveTypeId || !$wire.reason"
-                                        x-bind:class="{
-                                            'opacity-50 cursor-not-allowed': !selectedFromDate || !selectedToDate || !$wire.startTimePart || !$wire.endTimePart || !$wire.leaveTypeId || !$wire
-                                                .reason
-                                        }"
-                                        @mouseover="showHint = (!selectedFromDate || !selectedToDate || !$wire.startTimePart || !$wire.endTimePart || !$wire.leaveTypeId || !$wire.reason)">
+                            <div class="mt-6 sm:mt-8 flex justify-center">
+                                <div wire:key="submit-button" class="relative w-full sm:w-4/5 lg:w-full mx-auto">
+                                    <button type="submit" wire:loading.attr="disabled"
+                                        class="group w-full px-5 sm:px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium text-base sm:text-lg rounded-xl shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-[1.03] {{ !$fromDate || !$toDate || !$startTimePart || !$endTimePart || !$leaveTypeId || !$reason ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                        {{ !$fromDate || !$toDate || !$startTimePart || !$endTimePart || !$leaveTypeId || !$reason ? 'disabled' : '' }}
+                                        wire:mouseenter="$set('showHint', {{ !$fromDate || !$toDate || !$startTimePart || !$endTimePart || !$leaveTypeId || !$reason ? 'true' : 'false' }})"
+                                        wire:mouseleave="$set('showHint', false)">
                                         <div class="flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             Submit Leave Application
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none"
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none"
                                                 viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                             </svg>
@@ -913,47 +599,47 @@
                                     </button>
 
                                     <!-- Missing Fields Tooltip -->
-                                    <div x-show="showHint" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2"
-                                        x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-75"
-                                        x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform -translate-y-2" @mouseleave="showHint = false"
-                                        class="absolute bottom-full mb-2 w-56 right-0 bg-white rounded-lg shadow-xl border border-gray-200 text-xs p-2 z-10">
-                                        <h4 class="font-semibold text-gray-800 mb-1 text-center border-b border-gray-100 pb-1">Required Fields</h4>
-                                        <ul class="space-y-1 text-gray-600">
+                                    <div wire:key="hint-tooltip"
+                                        class="absolute bottom-full mb-3 w-64 right-0 bg-white rounded-lg shadow-xl border border-gray-200 text-xs p-3 z-10 transition-all duration-200
+                                        {{ $showHint ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2 pointer-events-none' }}"
+                                        wire:mouseleave="$set('showHint', false)">
+                                        <h4 class="font-semibold text-gray-800 mb-2 text-center border-b border-gray-100 pb-2">Complete Required Fields</h4>
+                                        <ul class="space-y-2 text-gray-600">
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="$wire.leaveTypeId ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="$wire.leaveTypeId ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $leaveTypeId ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $leaveTypeId ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">Leave type</span>
+                                                <span class="ml-2">Leave type</span>
                                             </li>
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="selectedFromDate ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="selectedFromDate ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $fromDate ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $fromDate ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">Start date</span>
+                                                <span class="ml-2">Start date</span>
                                             </li>
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="selectedToDate ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="selectedToDate ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $toDate ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $toDate ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">End date</span>
+                                                <span class="ml-2">End date</span>
                                             </li>
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="$wire.startTimePart ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="$wire.startTimePart ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $startTimePart ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $startTimePart ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">Start time part</span>
+                                                <span class="ml-2">Start time part</span>
                                             </li>
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="$wire.endTimePart ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="$wire.endTimePart ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $endTimePart ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $endTimePart ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">End time part</span>
+                                                <span class="ml-2">End time part</span>
                                             </li>
                                             <li class="flex items-center">
-                                                <span class="w-4 text-center" x-bind:class="$wire.reason ? 'text-green-500' : 'text-red-500'">
-                                                    <span x-text="$wire.reason ? '✓' : '×'"></span>
+                                                <span class="w-5 h-5 flex items-center justify-center rounded-full {{ $reason ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500' }}">
+                                                    {{ $reason ? '✓' : '×' }}
                                                 </span>
-                                                <span class="ml-1">Reason</span>
+                                                <span class="ml-2">Reason</span>
                                             </li>
                                         </ul>
                                     </div>
@@ -1121,3 +807,5 @@
             </div>
         </div>
     </div>
+
+</div>

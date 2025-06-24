@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Holiday;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class HolidaySeeder extends Seeder

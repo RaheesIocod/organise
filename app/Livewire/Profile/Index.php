@@ -12,6 +12,7 @@ use Livewire\Component;
 class Index extends Component
 {
     public $activeTab = 'overview';
+
     public $year;
 
     public function mount(): void
@@ -92,7 +93,7 @@ class Index extends Component
             'companyExperience' => $companyExperience,
             'totalExperience' => $totalExperience,
             'leaveStatistics' => $leaveStatistics,
-            'taskStatistics' => $taskStatistics
+            'taskStatistics' => $taskStatistics,
         ]);
     }
 }

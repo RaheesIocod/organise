@@ -14,7 +14,7 @@ class Show extends Component
     {
         // Ensure the user can only see their own leave applications
         // or is a manager/admin
-        if ($leave->user_id !== auth()->id() && !auth()->user()->hasRole(['manager', 'admin', 'hr'])) {
+        if ($leave->user_id !== auth()->id() && ! auth()->user()->hasRole(['manager', 'admin', 'hr'])) {
             abort(403);
         }
 
@@ -31,6 +31,7 @@ class Show extends Component
         // Only allow cancellation for pending leave applications
         if ($this->leave->status !== 'pending') {
             session()->flash('error', 'Only pending leave applications can be cancelled.');
+
             return;
         }
 

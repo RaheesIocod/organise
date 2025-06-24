@@ -9,6 +9,7 @@ use Livewire\Component;
 class Edit extends Component
 {
     public $user;
+
     public $userToEdit;
 
     public function mount(User $user)

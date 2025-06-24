@@ -12,7 +12,9 @@ class Index extends Component
     use WithPagination;
 
     public $user;
+
     public $search = '';
+
     public $designationFilter = '';
 
     public function mount()

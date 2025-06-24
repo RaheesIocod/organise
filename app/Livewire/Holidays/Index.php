@@ -20,7 +20,7 @@ class Index extends Component
             ->paginate(10);
 
         return view('livewire.holidays.index', [
-            'holidays' => $holidays
+            'holidays' => $holidays,
         ]);
     }
 

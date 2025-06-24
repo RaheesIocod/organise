@@ -3,17 +3,22 @@
 namespace App\Livewire\Admin\LeaveTypes;
 
 use App\Models\LeaveType;
-use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class Create extends Component
 {
     #[Title('Create Leave Type')]
     public $name;
+
     public $description;
+
     public $days_allowed = 0;
+
     public $requires_approval = true;
+
     public $is_paid = true;
+
     public $color = '#4F46E5'; // Default color (Indigo)
 
     protected $rules = [

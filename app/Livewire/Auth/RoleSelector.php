@@ -7,13 +7,15 @@ use Livewire\Component;
 class RoleSelector extends Component
 {
     public $selectedRole = '';
+
     public $demoCredentials = [];
 
     // Event that will be emitted to the parent component
     public function updatedSelectedRole()
     {
-        if (!$this->selectedRole) {
+        if (! $this->selectedRole) {
             $this->demoCredentials = [];
+
             return;
         }
 
@@ -22,25 +24,25 @@ class RoleSelector extends Component
             case 'admin':
                 $this->demoCredentials = [
                     'email' => 'admin@iocod.com',
-                    'password' => 'password'
+                    'password' => 'password',
                 ];
                 break;
             case 'hr':
                 $this->demoCredentials = [
                     'email' => 'hr@iocod.com',
-                    'password' => 'password'
+                    'password' => 'password',
                 ];
                 break;
             case 'manager':
                 $this->demoCredentials = [
                     'email' => 'manager@iocod.com',
-                    'password' => 'password'
+                    'password' => 'password',
                 ];
                 break;
             case 'employee':
                 $this->demoCredentials = [
                     'email' => 'employee1@iocod.com',
-                    'password' => 'password'
+                    'password' => 'password',
                 ];
                 break;
             default:

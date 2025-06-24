@@ -5,17 +5,20 @@ namespace App\Livewire\Manager\Team;
 use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\Auth;
 
 class Index extends Component
 {
     use WithPagination;
 
     public $search = '';
+
     public $showInactive = false;
+
     public $sortField = 'name';
+
     public $sortAsc = true;
 
     protected $queryString = [
@@ -30,7 +33,7 @@ class Index extends Component
         $user = Auth::user();
 
         // Check if user is authorized
-        if (!($user->hasRole('manager') || $user->hasRole('admin') || $user->hasRole('hr'))) {
+        if (! ($user->hasRole('manager') || $user->hasRole('admin') || $user->hasRole('hr'))) {
             return redirect()->route('dashboard');
         }
     }
@@ -38,7 +41,7 @@ class Index extends Component
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
-            $this->sortAsc = !$this->sortAsc;
+            $this->sortAsc = ! $this->sortAsc;
         } else {
             $this->sortAsc = true;
         }
@@ -64,13 +67,13 @@ class Index extends Component
         // Apply search filter
         if ($this->search) {
             $query->where(function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('email', 'like', '%' . $this->search . '%');
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('email', 'like', '%'.$this->search.'%');
             });
         }
 
         // Apply active/inactive filter
-        if (!$this->showInactive) {
+        if (! $this->showInactive) {
             $query->where('is_active', true);
         }
 

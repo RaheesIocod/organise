@@ -11,13 +11,21 @@ use Livewire\Component;
 class Tasks extends Component
 {
     public $user;
+
     public $year;
+
     public $month;
+
     public $selectedProject = null;
+
     public $projects = [];
+
     public $monthlyHours = [];
+
     public $dailyHours = [];
+
     public $projectHours = [];
+
     public $totalHours = 0;
 
     public function mount()
@@ -84,7 +92,7 @@ class Tasks extends Component
                 'id' => $projectId,
                 'name' => $project ? $project->name : 'Unknown Project',
                 'hours' => $items->sum('hours_spent'),
-                'percentage' => $this->totalHours > 0 ? ($items->sum('hours_spent') / $this->totalHours) * 100 : 0
+                'percentage' => $this->totalHours > 0 ? ($items->sum('hours_spent') / $this->totalHours) * 100 : 0,
             ];
         });
 

@@ -13,6 +13,7 @@ class Index extends Component
     use WithPagination;
 
     public $filter = 'pending';
+
     public $search = '';
 
     protected $queryString = [
@@ -34,8 +35,8 @@ class Index extends Component
             // Admin or HR can see all leave applications
             if ($this->search) {
                 $query->whereHas('user', function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                    $q->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%');
                 });
             }
         } else {
@@ -46,8 +47,8 @@ class Index extends Component
 
             if ($this->search) {
                 $query->whereHas('user', function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                    $q->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%');
                 });
             }
         }
@@ -64,7 +65,7 @@ class Index extends Component
         $leaveApplications = $query->paginate(10);
 
         return view('livewire.manager.leave-approvals.index', [
-            'leaveApplications' => $leaveApplications
+            'leaveApplications' => $leaveApplications,
         ]);
     }
 

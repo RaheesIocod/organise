@@ -14,7 +14,7 @@ class Index extends Component
         $this->user = Auth::user();
 
         // Check if user has permission
-        if (!$this->user->hasRole('admin')) {
+        if (! $this->user->hasRole('admin')) {
             return redirect()->route('dashboard');
         }
     }

@@ -17,17 +17,24 @@ class Dashboard extends Component
     use WithPagination;
 
     public $user;
+
     public $team = [];
+
     public $pendingLeaves = 0;
+
     public $teamPresent = 0;
+
     public $teamAbsent = 0;
+
     public $teamOnLeave = 0;
+
     public $projectsInProgress = 0;
+
     public function mount()
     {
         $this->user = Auth::user();
 
-        if (!($this->user->hasRole('manager') || $this->user->hasRole('admin') || $this->user->hasRole('hr'))) {
+        if (! ($this->user->hasRole('manager') || $this->user->hasRole('admin') || $this->user->hasRole('hr'))) {
             return redirect()->route('dashboard');
         }
 
@@ -45,6 +52,7 @@ class Dashboard extends Component
             $this->team = User::where('reported_to', $this->user->id)->get()->toArray();
         }
     }
+
     public function loadDashboardStats()
     {
         $today = Carbon::today();
@@ -92,10 +100,10 @@ class Dashboard extends Component
             $userId = $entry->user_id;
             $userName = $entry->user->name;
 
-            if (!isset($userHours[$userId])) {
+            if (! isset($userHours[$userId])) {
                 $userHours[$userId] = [
                     'name' => $userName,
-                    'hours' => 0
+                    'hours' => 0,
                 ];
             }
 

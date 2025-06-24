@@ -6,7 +6,6 @@ use App\Models\LeaveType;
 use App\Models\User;
 use App\Models\UserLeaveBalance;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UserLeaveBalanceSeeder extends Seeder

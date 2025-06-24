@@ -7,7 +7,6 @@ use App\Models\LeaveType;
 use App\Models\User;
 use App\Models\UserLeaveBalance;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class LeaveApplicationSeeder extends Seeder
@@ -48,7 +47,7 @@ class LeaveApplicationSeeder extends Seeder
                     'from_date' => $startDate,
                     'to_date' => $endDate,
                     'days_count' => $daysCount,
-                    'reason' => 'Sample past leave reason #' . ($i + 1),
+                    'reason' => 'Sample past leave reason #'.($i + 1),
                     'status' => 'approved',
                     'approved_by' => User::role('manager')->first()->id,
                     'approved_at' => $startDate->copy()->subDays(rand(5, 10)),

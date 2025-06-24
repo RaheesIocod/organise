@@ -14,14 +14,23 @@ use Livewire\Component;
 class Dashboard extends Component
 {
     public $user;
+
     public $todayTaskHours = 0;
+
     public $todayTaskCount = 0;
+
     public $pendingLeaves = 0;
+
     public $approvedLeaves = 0;
+
     public $teamAttendance = [];
+
     public $projectsCount = 0;
+
     public $activeProjects = [];
+
     public $upcomingLeaves = [];
+
     public $recentTasks = [];
 
     public function mount()

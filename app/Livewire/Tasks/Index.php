@@ -14,19 +14,27 @@ class Index extends Component
     use WithPagination;
 
     public $user;
+
     public $projects = [];
+
     public $dateFilter;
+
     public $search;
+
     public $selectedProject = null;
 
     // Form fields
     public $selectedDate;
+
     public $description;
+
     public $hoursSpent;
 
     // Stats
     public $todayHours = 0;
+
     public $weekHours = 0;
+
     public $monthHours = 0;
 
     protected $rules = [
@@ -85,8 +93,8 @@ class Index extends Component
         // Apply search filter
         if ($this->search) {
             $query->where(function ($q) {
-                $q->where('task_name', 'like', '%' . $this->search . '%')
-                    ->orWhere('description', 'like', '%' . $this->search . '%');
+                $q->where('task_name', 'like', '%'.$this->search.'%')
+                    ->orWhere('description', 'like', '%'.$this->search.'%');
             });
         }
 
@@ -201,9 +209,9 @@ class Index extends Component
                     'data' => $data,
                     'backgroundColor' => '#93C5FD',
                     'borderColor' => '#3B82F6',
-                    'borderWidth' => 1
-                ]
-            ]
+                    'borderWidth' => 1,
+                ],
+            ],
         ];
     }
 
@@ -229,7 +237,7 @@ class Index extends Component
             '#8B5CF6',
             '#EC4899',
             '#6366F1',
-            '#14B8A6'
+            '#14B8A6',
         ];
 
         $i = 0;
@@ -246,9 +254,9 @@ class Index extends Component
                 [
                     'data' => $data,
                     'backgroundColor' => array_slice($colors, 0, count($labels)),
-                    'borderWidth' => 0
-                ]
-            ]
+                    'borderWidth' => 0,
+                ],
+            ],
         ];
     }
 }

@@ -13,16 +13,27 @@ use Livewire\Component;
 class CheckInOut extends Component
 {
     public $user;
+
     public $todayAttendance;
+
     public $checkedIn = false;
+
     public $checkedOut = false;
+
     public $checkInTime;
+
     public $checkOutTime;
+
     public $workHours;
+
     public $todayStatus;
+
     public $isHoliday = false;
+
     public $isOnLeave = false;
+
     public $holidayName;
+
     public $leaveType;
 
     public function mount()
@@ -78,7 +89,7 @@ class CheckInOut extends Component
             $this->todayStatus = $attendance->status;
         } else {
             // If no attendance record and not a holiday or leave, set defaults
-            if (!$this->isHoliday && !$this->isOnLeave) {
+            if (! $this->isHoliday && ! $this->isOnLeave) {
                 $this->todayStatus = Carbon::today()->isWeekend() ? 'weekend' : 'absent';
             }
         }
@@ -110,12 +121,12 @@ class CheckInOut extends Component
         $this->todayStatus = 'present';
         $this->todayAttendance = $attendance;
 
-        session()->flash('success', 'You have successfully checked in at ' . $now->format('H:i:s'));
+        session()->flash('success', 'You have successfully checked in at '.$now->format('H:i:s'));
     }
 
     public function checkOut()
     {
-        if (!$this->checkedIn || $this->checkedOut) {
+        if (! $this->checkedIn || $this->checkedOut) {
             return;
         }
 
@@ -135,7 +146,7 @@ class CheckInOut extends Component
             $this->checkOutTime = $now->format('H:i:s');
             $this->workHours = round($workHours, 2);
 
-            session()->flash('success', 'You have successfully checked out at ' . $now->format('H:i:s'));
+            session()->flash('success', 'You have successfully checked out at '.$now->format('H:i:s'));
         }
     }
 }

@@ -6,7 +6,6 @@ use App\Models\Project;
 use App\Models\TaskTimeEntry;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class TaskTimeEntrySeeder extends Seeder
@@ -54,9 +53,9 @@ class TaskTimeEntrySeeder extends Seeder
                     TaskTimeEntry::create([
                         'user_id' => $user->id,
                         'project_id' => $project->id,
-                        'task_name' => 'Task ' . ($i + 1),
+                        'task_name' => 'Task '.($i + 1),
                         'entry_date' => $date->format('Y-m-d'),
-                        'description' => 'Task ' . ($i + 1) . ' for ' . $project->name,
+                        'description' => 'Task '.($i + 1).' for '.$project->name,
                         'hours_spent' => $hours,
                     ]);
                 }

@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Designation;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -80,9 +79,9 @@ class UserSeeder extends Seeder
 
         foreach ($designations as $index => $designation) {
             $employee = User::create([
-                'name' => "Employee " . ($index + 1),
-                'email' => "employee" . ($index + 1) . "@iocod.com",
-                'mobile' => "98765432" . (14 + $index),
+                'name' => 'Employee '.($index + 1),
+                'email' => 'employee'.($index + 1).'@iocod.com',
+                'mobile' => '98765432'.(14 + $index),
                 'password' => Hash::make('password'),
                 'dob' => Carbon::now()->subYears(25 + $index),
                 'doj' => Carbon::now()->subMonths($index * 2),

@@ -12,10 +12,15 @@ use Livewire\Component;
 class Index extends Component
 {
     public $user;
+
     public $month;
+
     public $year;
+
     public $attendanceData = [];
+
     public $teamMembers = [];
+
     public $selectedUser = null;
 
     public function mount()

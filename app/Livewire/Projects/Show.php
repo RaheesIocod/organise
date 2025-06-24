@@ -9,7 +9,9 @@ use Livewire\Component;
 class Show extends Component
 {
     public Project $project;
+
     public $monthlyHours = [];
+
     public $teamMembers = [];
 
     public function mount(Project $project)
@@ -70,7 +72,7 @@ class Show extends Component
                 return [
                     'id' => $entry->user_id,
                     'name' => $entry->user->name,
-                    'hours' => $entry->total_hours
+                    'hours' => $entry->total_hours,
                 ];
             });
     }

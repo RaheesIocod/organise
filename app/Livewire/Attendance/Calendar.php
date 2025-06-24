@@ -12,6 +12,7 @@ use Livewire\Component;
 class Calendar extends Component
 {
     public $year;
+
     public $month;
 
     public function mount(): void

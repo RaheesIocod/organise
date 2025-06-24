@@ -11,17 +11,29 @@ use Livewire\Component;
 class Attendance extends Component
 {
     public $user;
+
     public $month;
+
     public $year;
+
     public $attendanceSummary = [];
+
     public $present = 0;
+
     public $absent = 0;
+
     public $onLeave = 0;
+
     public $weekends = 0;
+
     public $holidays = 0;
+
     public $lateArrivals = 0;
+
     public $earlyDepartures = 0;
+
     public $totalWorkHours = 0;
+
     public $averageWorkHours = 0;
 
     public function mount()

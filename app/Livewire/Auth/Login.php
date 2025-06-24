@@ -3,15 +3,17 @@
 namespace App\Livewire\Auth;
 
 use Illuminate\Support\Facades\Auth;
-use Livewire\Component;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class Login extends Component
 {
     #[Title('Login - Organice')]
     public $email;
+
     public $password;
+
     public $remember = false;
 
     protected $rules = [

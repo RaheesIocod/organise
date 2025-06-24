@@ -14,10 +14,15 @@ class TeamTasks extends Component
     use WithPagination;
 
     public $user;
+
     public $teamMembers = [];
+
     public $fromDate;
+
     public $toDate;
+
     public $selectedTeamMember = null;
+
     public $search = '';
 
     public function mount()
@@ -63,8 +68,8 @@ class TeamTasks extends Component
         // Apply search filter
         if ($this->search) {
             $query->where(function ($q) {
-                $q->where('task_name', 'like', '%' . $this->search . '%')
-                    ->orWhere('description', 'like', '%' . $this->search . '%');
+                $q->where('task_name', 'like', '%'.$this->search.'%')
+                    ->orWhere('description', 'like', '%'.$this->search.'%');
             });
         }
 
@@ -89,11 +94,12 @@ class TeamTasks extends Component
             ->groupBy('user_id')
             ->map(function ($entries) {
                 $user = $entries->first()->user;
+
                 return [
                     'user_id' => $user->id,
                     'name' => $user->name,
                     'hours' => $entries->sum('hours_spent'),
-                    'entries' => $entries->count()
+                    'entries' => $entries->count(),
                 ];
             })
             ->sortByDesc('hours')
@@ -149,9 +155,9 @@ class TeamTasks extends Component
                     'data' => $data,
                     'backgroundColor' => '#93C5FD',
                     'borderColor' => '#3B82F6',
-                    'borderWidth' => 1
-                ]
-            ]
+                    'borderWidth' => 1,
+                ],
+            ],
         ];
     }
 }

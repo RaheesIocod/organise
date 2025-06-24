@@ -4,7 +4,6 @@ namespace App\Livewire\Leaves;
 
 use App\Models\LeaveApplication;
 use App\Models\LeaveType;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -15,6 +14,7 @@ class Index extends Component
     use WithPagination;
 
     public $tab = 'pending';
+
     public $user;
 
     public function mount()
