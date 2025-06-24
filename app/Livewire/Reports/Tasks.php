@@ -28,6 +28,8 @@ class Tasks extends Component
 
     public $totalHours = 0;
 
+    public $taskEntries = [];
+
     public function mount()
     {
         $this->user = Auth::user();
@@ -39,6 +41,14 @@ class Tasks extends Component
 
     public function render()
     {
+        // Ensure the dailyHours array is properly formatted for the view
+        // Make sure keys are strings for consistent handling in the blade template
+        $formattedDailyHours = [];
+        foreach ($this->dailyHours as $day => $hours) {
+            $formattedDailyHours[(string)$day] = (float)$hours;
+        }
+        $this->dailyHours = $formattedDailyHours;
+
         return view('livewire.reports.tasks');
     }
 
@@ -67,7 +77,6 @@ class Tasks extends Component
     {
         $this->loadTaskData();
     }
-
     protected function loadTaskData()
     {
         // Build the base query
@@ -79,7 +88,7 @@ class Tasks extends Component
             $query->where('project_id', $this->selectedProject);
         }
 
-        $entries = $query->get();
+        $entries = $query->with('project')->get();
 
         // Calculate total hours
         $this->totalHours = $entries->sum('hours_spent');
@@ -103,13 +112,36 @@ class Tasks extends Component
         $endDate = $startDate->copy()->endOfMonth();
         $daysInMonth = $startDate->daysInMonth;
 
-        $dailyEntries = $entries->groupBy(function ($entry) {
-            return $entry->entry_date->format('j'); // Day of the month without leading zeros
-        });
-
+        // Initialize daily hours with proper keys (strictly use strings for consistent access in blade)
         $this->dailyHours = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
-            $this->dailyHours[$day] = isset($dailyEntries[$day]) ? $dailyEntries[$day]->sum('hours_spent') : 0;
+            $this->dailyHours[(string)$day] = 0;
+        }
+
+        // Manually calculate daily hours
+        foreach ($entries as $entry) {
+            $entryDate = $entry->entry_date;
+
+            // Get the day of the month using the appropriate method
+            try {
+                if ($entryDate instanceof \DateTime || $entryDate instanceof \Carbon\Carbon) {
+                    $day = (int)$entryDate->format('j');
+                } else {
+                    // Try to convert to string first
+                    $day = (int)date('j', strtotime((string)$entryDate));
+                }
+            } catch (\Exception $e) {
+                // If any error occurs, skip this entry
+                continue;
+            }
+
+            // Convert day to string for consistent array access
+            $dayKey = (string)$day;
+            if (isset($this->dailyHours[$dayKey])) {
+                // Ensure we're adding numeric values
+                $hours = (float)$entry->hours_spent;
+                $this->dailyHours[$dayKey] += $hours;
+            }
         }
 
         // Calculate monthly hours for the year for chart
@@ -130,12 +162,42 @@ class Tasks extends Component
 
         $yearEntries = $yearEntries->get();
 
-        // Aggregate hours by month
+        // Aggregate hours by month using a more direct approach
         foreach ($yearEntries as $entry) {
-            $month = $entry->entry_date->month;
-            $monthlyData[$month] += $entry->hours_spent;
+            // Convert the date to a month number
+            $entryDate = $entry->entry_date;
+
+            // Get the month number using the appropriate method
+            try {
+                if ($entryDate instanceof \DateTime || $entryDate instanceof \Carbon\Carbon) {
+                    $month = (int)$entryDate->format('n');
+                } else {
+                    // Try to convert to string first
+                    $month = (int)date('n', strtotime((string)$entryDate));
+                }
+            } catch (\Exception $e) {
+                // If any error occurs, skip this entry
+                continue;
+            }
+
+            if (isset($monthlyData[$month])) {
+                $monthlyData[$month] += $entry->hours_spent;
+            }
         }
 
         $this->monthlyHours = array_values($monthlyData);
+
+        // Store task entries for the details table
+        $this->taskEntries = $entries->map(function ($entry) {
+            return [
+                'date' => $entry->entry_date,
+                'project_name' => $entry->project ? $entry->project->name : 'Unknown Project',
+                'description' => $entry->description,
+                'hours' => $entry->hours_spent
+            ];
+        })->sortByDesc('date')->values()->all();
+
+        // Dispatch event to update charts
+        $this->dispatch('taskDataUpdated');
     }
 }
