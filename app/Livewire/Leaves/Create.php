@@ -16,16 +16,20 @@ class Create extends Component
     public $fromDate;
     public $toDate;
     public $reason;
-    public $isHalfDay = false;
-    public $halfDayType = 'morning';
+    public $isHalfDay = false; // Legacy - keeping for backward compatibility
+    public $halfDayType = 'morning'; // Legacy - keeping for backward compatibility
+
+    // New properties for time-of-day parts
+    public $startTimePart = 'morning'; // 'morning' or 'afternoon'
+    public $endTimePart = 'end_of_day'; // 'morning' or 'end_of_day'
 
     protected $rules = [
         'leaveTypeId' => 'required|exists:leave_types,id',
         'fromDate' => 'required|date|after_or_equal:today',
         'toDate' => 'required|date|after_or_equal:fromDate',
         'reason' => 'required|string|min:5|max:500',
-        'isHalfDay' => 'boolean',
-        'halfDayType' => 'required_if:isHalfDay,true|in:morning,afternoon',
+        'startTimePart' => 'required|in:morning,afternoon',
+        'endTimePart' => 'required|in:morning,end_of_day',
     ];
 
     protected $messages = [
@@ -35,7 +39,8 @@ class Create extends Component
         'toDate.required' => 'Please select an end date.',
         'toDate.after_or_equal' => 'End date must be after or the same as the start date.',
         'reason.required' => 'Please provide a reason for your leave.',
-        'halfDayType.required_if' => 'Please select which half of the day (morning or afternoon).',
+        'startTimePart.required' => 'Please select start time of day.',
+        'endTimePart.required' => 'Please select end time of day.',
     ];
 
     public function mount(): void
@@ -73,19 +78,45 @@ class Create extends Component
         $fromDate = Carbon::parse($this->fromDate);
         $toDate = Carbon::parse($this->toDate);
 
-        // Calculate days count, handling half-day logic
+        // Calculate days count, handling time part logic
         $daysCount = $toDate->diffInDays($fromDate) + 1;
 
-        // If it's a half-day leave, adjust the days count
-        if ($this->isHalfDay) {
-            // For half-day leaves, reduce the count by 0.5
-            // This only makes sense when from date and to date are the same
-            if ($fromDate->isSameDay($toDate)) {
+        // Adjust days count based on start and end time parts
+        if ($fromDate->isSameDay($toDate)) {
+            // Same day - determine if it's half or full day
+            if ($this->startTimePart === 'morning' && $this->endTimePart === 'end_of_day') {
+                // Full day (morning to end of day)
+                $daysCount = 1;
+                $this->isHalfDay = false;
+            } else if ($this->startTimePart === 'afternoon' && $this->endTimePart === 'end_of_day') {
+                // Half day (afternoon only)
                 $daysCount = 0.5;
+                $this->isHalfDay = true;
+                $this->halfDayType = 'afternoon';
+            } else if ($this->startTimePart === 'morning' && $this->endTimePart === 'morning') {
+                // Half day (morning only)
+                $daysCount = 0.5;
+                $this->isHalfDay = true;
+                $this->halfDayType = 'morning';
             } else {
-                // Multi-day half-days not supported, reset to full day
+                // Other combinations - treat as full day
+                $daysCount = 1;
                 $this->isHalfDay = false;
             }
+        } else {
+            // Multiple days - adjust for partial first and last day if needed
+            if ($this->startTimePart === 'afternoon') {
+                // Starting in afternoon reduces by 0.5
+                $daysCount -= 0.5;
+            }
+
+            if ($this->endTimePart === 'morning') {
+                // Ending in morning reduces by 0.5
+                $daysCount -= 0.5;
+            }
+
+            // Multi-day leaves can't be half-day
+            $this->isHalfDay = false;
         }
 
         // Check if the user has enough leave balance
@@ -123,6 +154,8 @@ class Create extends Component
             'status' => 'pending',
             'is_half_day' => $this->isHalfDay,
             'half_day_type' => $this->isHalfDay ? $this->halfDayType : null,
+            'start_time_part' => $this->startTimePart,
+            'end_time_part' => $this->endTimePart,
         ]);
 
         session()->flash('success', 'Leave application submitted successfully.');

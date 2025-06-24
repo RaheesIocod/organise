@@ -29,6 +29,8 @@ class LeaveApplication extends Model
         'days_count',
         'is_half_day',
         'half_day_type',
+        'start_time_part',
+        'end_time_part',
     ];
 
     /**
